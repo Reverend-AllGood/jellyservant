@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  jellyservant:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/config      # persists schedules, server config, sync log, known_ids
+      - ./output:/output      # where .strm and .nfo files are written
+    environment:
+      - OUTPUT_DIR=/output
+      - CONFIG_FILE=/config/config.json
+    restart: unless-stopped
