@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JellyServant 1.5</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    /* ── Base ── */
+    * { box-sizing: border-box; }
+    body {
+      background-image: url('/jellyfin_skeleton_meal.jpg');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #0a0c10;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: rgba(10, 14, 22, 0.97);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #38bdf8;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Form elements ── */
+    label.field-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 5px;
+      letter-spacing: 0.04em;
+    }
+    input[type=text], input[type=password], input[type=number], select {
+      width: 100%;
+      padding: 9px 12px;
+      background: #0f1623;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 7px;
+      color: #f1f5f9;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus {
+      border-color: rgba(56, 189, 248, 0.7);
+    }
+    select option { background: #0f1623; color: #f1f5f9; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+      margin-bottom: 1rem;
+    }
+    .tab {
+      padding: 9px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      border: 1px solid transparent;
+      border-bottom: none;
+      transition: color 0.15s, background 0.15s;
+      letter-spacing: 0.03em;
+    }
+    .tab:hover { color: #94a3b8; background: rgba(56,189,248,0.04); }
+    .tab.active {
+      color: #38bdf8;
+      background: rgba(10, 14, 22, 0.97);
+      border-color: rgba(56, 189, 248, 0.18);
+      border-bottom-color: rgba(10, 14, 22, 0.97);
+      margin-bottom: -1px;
+    }
+    .panel { display: none; }
+    .panel.active { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 9px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s; border: 1px solid transparent;
+      letter-spacing: 0.02em;
+    }
+    .btn-primary {
+      background: #0ea5e9;
+      border-color: #0284c7;
+      color: #ffffff;
+    }
+    .btn-primary:hover { background: #38bdf8; }
+    .btn-success {
+      background: #16a34a;
+      border-color: #15803d;
+      color: #ffffff;
+    }
+    .btn-success:hover { background: #22c55e; }
+    .btn-ghost {
+      background: transparent;
+      border-color: rgba(100, 116, 139, 0.4);
+      color: #94a3b8;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.05); color: #cbd5e1; border-color: rgba(100,116,139,0.7); }
+    .btn-danger { color: #f87171; background: transparent; border-color: transparent; font-size: 12px; }
+    .btn-danger:hover { color: #fca5a5; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    }
+    .badge-blue  { background: rgba(14,165,233,0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); }
+    .badge-green { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+    .badge-amber { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .badge-red   { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .badge-gray  { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.25); }
+
+    /* ── Status pill ── */
+    #status-pill {
+      font-size: 12px; font-weight: 600; padding: 4px 14px;
+      border-radius: 20px; letter-spacing: 0.04em;
+    }
+
+    /* ── Library list ── */
+    #library-list {
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid rgba(56,189,248,0.15);
+      border-radius: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(56,189,248,0.3) transparent;
+    }
+    .item-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.1s;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-row:hover { background: rgba(56,189,248,0.06); }
+    .item-name { flex: 1; font-size: 13px; color: #e2e8f0; font-weight: 500; }
+    .item-year { font-size: 12px; color: #64748b; }
+    .checkmark {
+      width: 17px; height: 17px; border-radius: 4px; flex-shrink: 0;
+      border: 1px solid rgba(100,116,139,0.5);
+      background: #0f1623;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.1s;
+    }
+    .checkmark.on {
+      background: #0ea5e9;
+      border-color: #38bdf8;
+    }
+
+    /* ── Day picker ── */
+    .day-btn {
+      padding: 5px 11px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid rgba(100,116,139,0.35);
+      color: #64748b; background: transparent; transition: all 0.15s;
+      letter-spacing: 0.03em;
+    }
+    .day-btn:hover { border-color: rgba(56,189,248,0.4); color: #94a3b8; }
+    .day-btn.on { background: rgba(14,165,233,0.2); border-color: #0ea5e9; color: #38bdf8; }
+
+    /* ── Toggle switch ── */
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+    .toggle {
+      position: relative; width: 38px; height: 20px; flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0; border-radius: 20px;
+      background: rgba(100,116,139,0.3); border: 1px solid rgba(100,116,139,0.3);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .toggle-track::after {
+      content: ''; position: absolute; width: 14px; height: 14px;
+      border-radius: 50%; background: #64748b; top: 2px; left: 2px;
+      transition: all 0.2s;
+    }
+    .toggle input:checked + .toggle-track {
+      background: rgba(14,165,233,0.3); border-color: #0ea5e9;
+    }
+    .toggle input:checked + .toggle-track::after {
+      background: #38bdf8; transform: translateX(18px);
+    }
+    .toggle-label { font-size: 13px; font-weight: 500; color: #cbd5e1; }
+    .toggle-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+    /* ── Schedule card ── */
+    .sched-card {
+      background: #0f1623;
+      border: 1px solid rgba(56,189,248,0.12);
+      border-radius: 8px; padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .sched-name { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+    .sched-meta { font-size: 11px; color: #64748b; margin-top: 3px; line-height: 1.6; }
+
+    /* ── Log table ── */
+    .log-header {
+      display: grid; grid-template-columns: 130px 110px 90px 70px 70px 60px;
+      gap: 8px; padding: 6px 10px;
+      font-size: 11px; font-weight: 700; color: #38bdf8;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid rgba(56,189,248,0.15);
+    }
+    .log-row {
+      display: grid; grid-template-columns: 130px 110px 90px 70px 70px 60px;
+      gap: 8px; padding: 8px 10px;
+      font-size: 12px; color: #94a3b8;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      align-items: center;
+    }
+    .log-row:hover { background: rgba(56,189,248,0.03); }
+
+    /* ── Alert banner ── */
+    .alert {
+      padding: 10px 14px; border-radius: 8px;
+      font-size: 13px; font-weight: 500; display: none;
+    }
+    .alert-success { background: rgba(22,163,74,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+    .alert-error   { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #f87171; }
+    .alert-info    { background: rgba(14,165,233,0.12);  border: 1px solid rgba(14,165,233,0.3);  color: #38bdf8; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: rgba(56,189,248,0.1); margin: 4px 0; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.25); border-radius: 3px; }
+  </style>
+</head>
+<body class="p-5">
+<div style="max-width:680px; margin:0 auto; padding-top:1.5rem;">
+
+  <!-- ── Header ── -->
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
+    <div>
+      <div style="font-size:22px; font-weight:700; color:#38bdf8; letter-spacing:0.02em;">JellyServant</div>
+      <div style="font-size:11px; color:#475569; font-weight:500; letter-spacing:0.05em;">VERSION 1.5 BETA</div>
+    </div>
+    <div id="status-pill" class="badge badge-gray">Ready</div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('sync')">Sync</div>
+    <div class="tab" onclick="switchTab('schedules')">Schedules</div>
+    <div class="tab" onclick="switchTab('log')">Sync Log</div>
+    <div class="tab" onclick="switchTab('config')">Config</div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: SYNC
+  ════════════════════════════════════════ -->
+  <div id="tab-sync" class="panel active">
+
+    <div class="card">
+      <div class="card-title">Library Browser</div>
+
+      <!-- Browse controls -->
+      <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="browseLibrary()">Browse Library</button>
+        <input id="filter-text" type="text" placeholder="Filter titles…" oninput="renderList()"
+               style="flex:1; min-width:120px;">
+        <select id="filter-type" onchange="renderList()" style="width:110px;">
+          <option value="all">All types</option>
+          <option value="Movie">Movies</option>
+          <option value="Series">TV Shows</option>
+        </select>
+      </div>
+
+      <!-- Bulk select buttons -->
+      <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="selectAll()">All</button>
+        <button class="btn btn-ghost btn-sm" onclick="selectNone()">None</button>
+        <button class="btn btn-ghost btn-sm" onclick="selectType('Movie')">Movies</button>
+        <button class="btn btn-ghost btn-sm" onclick="selectType('Series')">TV Shows</button>
+        <span id="sel-summary" style="margin-left:auto; font-size:12px; color:#64748b; font-weight:500;"></span>
+      </div>
+
+      <!-- Item list -->
+      <div id="library-list">
+        <div style="padding:20px; text-align:center; color:#475569; font-size:13px;">
+          Click "Browse Library" to load your media from Jellyfin.
+        </div>
+      </div>
+    </div>
+
+    <!-- Sync button -->
+    <button class="btn btn-success" style="width:100%; padding:13px;" onclick="runManualSync()">
+      &#x1F680; Sync Selected Now
+    </button>
+
+    <div id="sync-alert" class="alert"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: SCHEDULES
+  ════════════════════════════════════════ -->
+  <div id="tab-schedules" class="panel">
+
+    <!-- Builder -->
+    <div class="card">
+      <div class="card-title">New Schedule</div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div>
+          <label class="field-label">Schedule Label</label>
+          <input id="s-label" type="text" value="Auto Sync">
+        </div>
+
+        <div>
+          <label class="field-label" style="margin-bottom:8px;">Days of Week</label>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="day-picker">
+            <div class="day-btn on" data-day="mon">Mon</div>
+            <div class="day-btn"    data-day="tue">Tue</div>
+            <div class="day-btn"    data-day="wed">Wed</div>
+            <div class="day-btn"    data-day="thu">Thu</div>
+            <div class="day-btn"    data-day="fri">Fri</div>
+            <div class="day-btn"    data-day="sat">Sat</div>
+            <div class="day-btn"    data-day="sun">Sun</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+          <div>
+            <label class="field-label">Hour (UTC, 0–23)</label>
+            <input id="s-hour" type="number" min="0" max="23" value="3">
+          </div>
+          <div>
+            <label class="field-label">Minute</label>
+            <input id="s-minute" type="number" min="0" max="59" value="0">
+          </div>
+          <div>
+            <label class="field-label">Scope</label>
+            <select id="s-scope">
+              <option value="full">Full library</option>
+              <option value="selection">Last selection</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Auto-add toggle -->
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" id="s-auto-add">
+            <div class="toggle-track"></div>
+          </label>
+          <div>
+            <div class="toggle-label">Auto-add new library items</div>
+            <div class="toggle-desc">
+              When enabled, any title added to your Jellyfin server since the last sync
+              will be automatically included in this schedule's next run.
+              Items you deliberately excluded from your original selection are never added.
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;" onclick="saveSchedule()">
+          Add Schedule
+        </button>
+      </div>
+    </div>
+
+    <!-- Saved schedules -->
+    <div class="card">
+      <div class="card-title">Active Schedules</div>
+      <div id="schedules-list">
+        <div style="font-size:13px; color:#475569;">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: SYNC LOG
+  ════════════════════════════════════════ -->
+  <div id="tab-log" class="panel">
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+        <div class="card-title" style="margin-bottom:0;">Sync History</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadLog()">Refresh</button>
+      </div>
+      <div class="log-header">
+        <span>Time</span>
+        <span>Trigger</span>
+        <span>Updated</span>
+        <span>Removed</span>
+        <span>Added</span>
+        <span>Status</span>
+      </div>
+      <div id="log-table"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: CONFIG
+  ════════════════════════════════════════ -->
+  <div id="tab-config" class="panel">
+    <div class="card">
+      <div class="card-title">Server Config</div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div>
+          <label class="field-label">Source Jellyfin URL</label>
+          <input id="cfg-server_url" type="text" placeholder="https://jellyfin.example.com">
+        </div>
+        <div>
+          <label class="field-label">Bridge Domain (stream host)</label>
+          <input id="cfg-sync_domain" type="text" placeholder="jellyfinsync.example.com">
+        </div>
+        <div>
+          <label class="field-label">API Key
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">
+              — leave blank to keep existing
+            </span>
+          </label>
+          <input id="cfg-api_key" type="password" placeholder="••••••••••••••••">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
+            <label class="field-label">Nginx Bridge User</label>
+            <input id="cfg-nx_user" type="text">
+          </div>
+          <div>
+            <label class="field-label">Nginx Bridge Password
+              <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">
+                — leave blank to keep
+              </span>
+            </label>
+            <input id="cfg-nx_pass" type="password" placeholder="••••••••">
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="saveConfig()">
+          Save Config
+        </button>
+        <div id="cfg-saved" style="display:none; text-align:center; font-size:12px; color:#4ade80; font-weight:600;">
+          ✓ Config saved
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<script>
+// ── State ────────────────────────────────────────────────────────
+let allItems   = [];
+let selectedIds = new Set();
+
+// ── Tab switching ─────────────────────────────────────────────────
+function switchTab(name) {
+  const names = ['sync','schedules','log','config'];
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (name === 'log')       loadLog();
+  if (name === 'schedules') loadSchedules();
+  if (name === 'config')    loadConfig();
+}
+
+// ── Browse / Library ──────────────────────────────────────────────
+async function browseLibrary() {
+  setPill('Fetching…', 'blue');
+  const cfg    = await (await fetch('/api/config')).json();
+  const apiKey = prompt('Enter your Jellyfin API key:');
+  if (!apiKey) { setPill('Ready', 'gray'); return; }
+  try {
+    const res  = await post('/api/browse', { server_url: cfg.server_url, api_key: apiKey });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    allItems    = data.items;
+    selectedIds = new Set(allItems.map(i => i.id));
+    renderList();
+    setPill(`${allItems.length} items`, 'green');
+  } catch(e) {
+    setPill('Error', 'red');
+    showAlert(e.message, 'error');
+  }
+}
+
+function renderList() {
+  const text     = v('filter-text').toLowerCase();
+  const type     = v('filter-type');
+  const filtered = allItems.filter(i =>
+    (type === 'all' || i.type === type) &&
+    i.name.toLowerCase().includes(text)
+  );
+  const el = document.getElementById('library-list');
+  if (!filtered.length) {
+    el.innerHTML = '<div style="padding:20px; text-align:center; color:#475569; font-size:13px;">No items match.</div>';
+    updateSummary(); return;
+  }
+  el.innerHTML = filtered.map(i => `
+    <div class="item-row" onclick="toggle('${i.id}')">
+      <div class="checkmark ${selectedIds.has(i.id) ? 'on' : ''}">
+        ${selectedIds.has(i.id)
+          ? '<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 3.5,6.5 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          : ''}
+      </div>
+      <span class="badge ${i.type === 'Movie' ? 'badge-blue' : 'badge-green'}" style="font-size:10px; padding:2px 7px;">
+        ${i.type === 'Movie' ? 'Movie' : 'TV'}
+      </span>
+      <span class="item-name">${i.name}</span>
+      <span class="item-year">${i.year}</span>
+    </div>`).join('');
+  updateSummary();
+}
+
+function toggle(id)       { selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id); renderList(); }
+function selectAll()      { allItems.forEach(i => selectedIds.add(i.id));  renderList(); }
+function selectNone()     { selectedIds.clear();                            renderList(); }
+function selectType(t)    { allItems.filter(i => i.type === t).forEach(i => selectedIds.add(i.id)); renderList(); }
+function updateSummary()  {
+  document.getElementById('sel-summary').textContent =
+    selectedIds.size ? `${selectedIds.size} of ${allItems.length} selected` : '';
+}
+
+async function runManualSync() {
+  if (!selectedIds.size) { showAlert('No items selected.', 'error'); return; }
+  setPill('Syncing…', 'blue');
+  showAlert(`Syncing ${selectedIds.size} items — please wait…`, 'info');
+  try {
+    const res  = await post('/api/sync', {
+      selected_ids: [...selectedIds],
+      known_ids:    allItems.map(i => i.id)  // snapshot full library at browse time
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const parts = [];
+    if (data.movies)  parts.push(`${data.movies} movie${data.movies !== 1 ? 's' : ''} updated`);
+    if (data.shows)   parts.push(`${data.shows} show${data.shows !== 1 ? 's' : ''} updated`);
+    if (data.removed) parts.push(`${data.removed} item${data.removed !== 1 ? 's' : ''} removed`);
+    if (!parts.length) parts.push('Everything already up to date');
+    showAlert('✓ ' + parts.join(' · '), 'success');
+    setPill('Done', 'green');
+  } catch(e) {
+    showAlert('Sync failed: ' + e.message, 'error');
+    setPill('Error', 'red');
+  }
+}
+
+// ── Day picker ────────────────────────────────────────────────────
+document.querySelectorAll('.day-btn').forEach(b => {
+  b.addEventListener('click', () => b.classList.toggle('on'));
+});
+
+// ── Schedules ─────────────────────────────────────────────────────
+async function saveSchedule() {
+  const days = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
+  if (!days.length) { alert('Select at least one day.'); return; }
+  await post('/api/schedules', {
+    label:        v('s-label'),
+    days,
+    hour:         parseInt(v('s-hour')),
+    minute:       parseInt(v('s-minute')),
+    scope:        v('s-scope'),
+    auto_add_new: document.getElementById('s-auto-add').checked,
+    enabled:      true
+  });
+  loadSchedules();
+}
+
+async function loadSchedules() {
+  const list = await (await fetch('/api/schedules')).json();
+  const el   = document.getElementById('schedules-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="font-size:13px; color:#475569;">No schedules yet. Create one above.</div>';
+    return;
+  }
+  const dn = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' };
+  el.innerHTML = list.map(s => `
+    <div class="sched-card" style="margin-bottom:8px;">
+      <div style="flex:1;">
+        <div class="sched-name">${s.label}</div>
+        <div class="sched-meta">
+          ${s.days.map(d => dn[d]||d).join(', ')}
+          &nbsp;·&nbsp;
+          ${String(s.hour).padStart(2,'0')}:${String(s.minute).padStart(2,'0')} UTC
+          &nbsp;·&nbsp;
+          ${s.scope === 'full' ? 'Full library' : 'Last selection'}
+          ${s.auto_add_new
+            ? '&nbsp;·&nbsp;<span style="color:#fbbf24;">⚡ Auto-add new</span>'
+            : ''}
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <span class="badge ${s.enabled ? 'badge-green' : 'badge-gray'}">
+          ${s.enabled ? 'On' : 'Off'}
+        </span>
+        <button class="btn btn-ghost btn-sm" onclick="toggleSchedule('${s.id}', ${!s.enabled})">
+          ${s.enabled ? 'Pause' : 'Enable'}
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleSchedule(id, enabled) {
+  const list = await (await fetch('/api/schedules')).json();
+  const s = list.find(x => x.id === id);
+  if (s) await post('/api/schedules', { ...s, enabled });
+  loadSchedules();
+}
+
+async function deleteSchedule(id) {
+  if (!confirm('Delete this schedule?')) return;
+  await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+  loadSchedules();
+}
+
+// ── Log ───────────────────────────────────────────────────────────
+async function loadLog() {
+  const log = await (await fetch('/api/log')).json();
+  const el  = document.getElementById('log-table');
+  if (!log.length) {
+    el.innerHTML = '<div style="padding:12px 10px; font-size:13px; color:#475569;">No syncs recorded yet.</div>';
+    return;
+  }
+  el.innerHTML = log.map(e => `
+    <div class="log-row">
+      <span style="color:#cbd5e1;">${e.ts}</span>
+      <span style="color:#94a3b8;">${e.trigger}</span>
+      <span style="color:#94a3b8;">${e.error ? '—' : `${e.movies}M · ${e.shows}S`}</span>
+      <span style="color:${(e.removed||0) > 0 ? '#f87171' : '#64748b'};">${e.removed ?? 0}</span>
+      <span style="color:${(e.added||0) > 0 ? '#4ade80' : '#64748b'};">${e.added ?? 0}</span>
+      <span>
+        <span class="badge ${e.error ? 'badge-red' : 'badge-green'}" style="font-size:10px;">
+          ${e.error ? 'Error' : 'OK'}
+        </span>
+      </span>
+    </div>`).join('');
+}
+
+// ── Config ────────────────────────────────────────────────────────
+async function loadConfig() {
+  const cfg = await (await fetch('/api/config')).json();
+  document.getElementById('cfg-server_url').value  = cfg.server_url  || '';
+  document.getElementById('cfg-sync_domain').value = cfg.sync_domain || '';
+  document.getElementById('cfg-nx_user').value     = cfg.nx_user     || '';
+}
+
+async function saveConfig() {
+  await post('/api/config', {
+    server_url:  v('cfg-server_url'),
+    sync_domain: v('cfg-sync_domain'),
+    nx_user:     v('cfg-nx_user'),
+    api_key:     v('cfg-api_key'),
+    nx_pass:     v('cfg-nx_pass')
+  });
+  const el = document.getElementById('cfg-saved');
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 2500);
+}
+
+// ── Utilities ─────────────────────────────────────────────────────
+function v(id) { return document.getElementById(id).value; }
+
+function post(url, body) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+function showAlert(msg, type) {
+  const el = document.getElementById('sync-alert');
+  el.className = `alert alert-${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function setPill(msg, color) {
+  const el = document.getElementById('status-pill');
+  el.className = `badge badge-${color === 'blue' ? 'blue' : color === 'green' ? 'green' : color === 'red' ? 'red' : 'gray'}`;
+  el.textContent = msg;
+}
+</script>
+</body>
+</html>
