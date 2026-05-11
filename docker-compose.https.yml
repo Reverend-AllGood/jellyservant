@@ -1,0 +1,51 @@
+version: "3.9"
+
+# ── JellyServant 1.6 — optional HTTPS via Caddy sidecar ──────────────────────
+#
+# Use this file ONLY if you do NOT already have a reverse proxy (NPM, Traefik, etc).
+# Caddy will automatically obtain a free Let's Encrypt certificate for your domain.
+#
+# Usage:
+#   1. Point your domain's A record at this server.
+#   2. Fill in DOMAIN and ACME_EMAIL below.
+#   3. Run:  docker compose -f docker-compose.https.yml up -d
+#
+# For LAN / local use: leave DOMAIN blank.
+#   Caddy will serve on https://localhost with a self-signed cert (browser warning is normal).
+
+services:
+  jellyservant:
+    build: .
+    # No ports exposed to the host — Caddy handles all inbound traffic.
+    expose:
+      - "5000"
+    volumes:
+      - ./config:/config
+      - ./output:/output
+    environment:
+      - OUTPUT_DIR=/output
+      - CONFIG_FILE=/config/config.json
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      # Your public domain name, e.g. jellyservant.example.com
+      # Leave blank for LAN/localhost (self-signed cert).
+      - DOMAIN=${DOMAIN:-}
+      # Required by Let's Encrypt when DOMAIN is set.
+      - ACME_EMAIL=${ACME_EMAIL:-}
+    depends_on:
+      - jellyservant
+    restart: unless-stopped
+
+volumes:
+  caddy_data:    # persists Let's Encrypt certs — don't delete this volume
+  caddy_config:

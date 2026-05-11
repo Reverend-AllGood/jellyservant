@@ -1,0 +1,8 @@
+# Caddyfile — used by docker-compose.https.yml only.
+# If DOMAIN is set, Caddy fetches a real Let's Encrypt cert automatically.
+# If DOMAIN is blank, Caddy uses a self-signed cert (good for LAN use).
+
+{$DOMAIN:} {
+    tls {$ACME_EMAIL:internal}
+    reverse_proxy jellyservant:5000
+}
