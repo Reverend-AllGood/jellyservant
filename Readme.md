@@ -128,7 +128,7 @@ Open the **Config** tab in the UI and fill in:
 | Field | Description |
 |---|---|
 | **Source Jellyfin URL** | Full URL of your Jellyfin server, e.g. `https://jellyfin.example.com` |
-| **Bridge Domain** | The domain/IP that your secondary server will use to stream, e.g. `jellyfin.example.com` |
+| **Bridge Domain** | The domain/IP that your secondary server will use to stream,this must be different than your actual jellyfin URL, e.g. `jellyservant.example.com` |
 | **API Key** | Your Jellyfin API key (Dashboard → API Keys) |
 | **Proxy Username** | Username for the `.strm` auth credential (can be a Jellyfin user or proxy user) |
 | **Proxy Password** | Password for the above |
