@@ -1,3 +1,5 @@
+<img width="1024" height="572" alt="jellyfin_skeleton_meal" src="https://github.com/user-attachments/assets/d2b6a679-db3e-43dd-9425-599d1e35ae4d" />
+
 # JellyServant
 
 **JellyServant** is a self-hosted web UI that syncs your Jellyfin library to `.strm` + `.nfo` files, making your media available to secondary Jellyfin servers or any Kodi-compatible player — without copying actual media files.
