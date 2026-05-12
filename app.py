@@ -6,7 +6,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 app = Flask(__name__)
 app.secret_key = "jellyservant_secret_2026_clifton"
-VERSION = "1.6.2"
+VERSION = "1.6.3"
 
 OUTPUT_BASE = os.getenv("OUTPUT_DIR", "/output")
 CONFIG_FILE = os.getenv("CONFIG_FILE", "/config/config.json")
@@ -35,6 +35,14 @@ def save_config(cfg):
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
     with open(CONFIG_FILE, "w") as f:
         json.dump(cfg, f, indent=2)
+
+def clean_domain(url):
+    """Strip http:// or https:// from a domain so it can be safely
+    embedded inside a https://user:pass@domain/... strm URL."""
+    for prefix in ("https://", "http://"):
+        if url.startswith(prefix):
+            url = url[len(prefix):]
+    return url.rstrip("/")
 
 # ── Jellyfin helpers ──────────────────────────────────────────────────────────
 
@@ -244,7 +252,7 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
         os.makedirs(folder, exist_ok=True)
         jf_date   = m.get("DateModified")
         strm_path = os.path.join(folder, f"{sn}.strm")
-        strm_url  = (f"https://{nx_user}:{nx_pass}@{sync_domain}"
+        strm_url  = (f"https://{nx_user}:{nx_pass}@{clean_domain(sync_domain)}"
                      f"/Videos/{m['Id']}/stream?static=true")
 
         if not os.path.exists(strm_path) or open(strm_path).read().strip() != strm_url:
@@ -277,7 +285,7 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
             os.makedirs(season_folder, exist_ok=True)
 
             strm_path = os.path.join(season_folder, f"{sn} - S{season_num}E{ep_num}.strm")
-            strm_url  = (f"https://{nx_user}:{nx_pass}@{sync_domain}"
+            strm_url  = (f"https://{nx_user}:{nx_pass}@{clean_domain(sync_domain)}"
                          f"/Videos/{ep['Id']}/stream?static=true")
 
             if not os.path.exists(strm_path) or open(strm_path).read().strip() != strm_url:
