@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>JellyServant 1.6</title>
+  <title>JellyServant 1.6.2</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     /* ── Base ── */
@@ -255,7 +255,7 @@
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
     <div>
       <div style="font-size:22px; font-weight:700; color:#38bdf8; letter-spacing:0.02em;">JellyServant</div>
-      <div style="font-size:11px; color:#475569; font-weight:500; letter-spacing:0.05em;">VERSION 1.6</div>
+      <div style="font-size:11px; color:#475569; font-weight:500; letter-spacing:0.05em;">VERSION 1.6.2</div>
     </div>
     <div id="status-pill" class="badge badge-gray">Ready</div>
   </div>
@@ -278,7 +278,7 @@
 
       <!-- Browse controls -->
       <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="browseLibrary()">Browse Library</button>
+        <button class="btn btn-primary" onclick="browseLibrary()">Load Library</button>
         <input id="filter-text" type="text" placeholder="Filter titles…" oninput="renderList()"
                style="flex:1; min-width:120px;">
         <select id="filter-type" onchange="renderList()" style="width:110px;">
@@ -300,7 +300,7 @@
       <!-- Item list -->
       <div id="library-list">
         <div style="padding:20px; text-align:center; color:#475569; font-size:13px;">
-          Click "Browse Library" to load your media from Jellyfin.
+          Click "Load Library" to fetch your media from the configured Jellyfin server.
         </div>
       </div>
     </div>
@@ -421,12 +421,16 @@
       <div class="card-title">Server Config</div>
       <div style="display:flex; flex-direction:column; gap:12px;">
         <div>
-          <label class="field-label">Source Jellyfin URL</label>
+          <label class="field-label">Jellyfin Server URL
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— the server you want to sync from</span>
+          </label>
           <input id="cfg-server_url" type="text" placeholder="https://jellyfin.example.com">
         </div>
         <div>
-          <label class="field-label">Bridge Domain (stream host)</label>
-          <input id="cfg-sync_domain" type="text" placeholder="jellyfinsync.example.com">
+          <label class="field-label">Stream Domain
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— usually the same as Server URL above</span>
+          </label>
+          <input id="cfg-sync_domain" type="text" placeholder="https://jellyfin.example.com">
         </div>
         <div>
           <label class="field-label">API Key
@@ -438,15 +442,15 @@
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>
-            <label class="field-label">Proxy Username</label>
+            <label class="field-label">Streaming Username
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— Jellyfin account used for playback</span>
+          </label>
             <input id="cfg-nx_user" type="text">
           </div>
           <div>
-            <label class="field-label">Proxy Password
-              <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">
-                — leave blank to keep
-              </span>
-            </label>
+            <label class="field-label">Streaming Password
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— leave blank to keep existing</span>
+          </label>
             <input id="cfg-nx_pass" type="password" placeholder="••••••••">
           </div>
         </div>
@@ -483,11 +487,9 @@ function switchTab(name) {
 // ── Browse / Library ──────────────────────────────────────────────
 async function browseLibrary() {
   setPill('Fetching…', 'blue');
-  const cfg    = await (await fetch('/api/config')).json();
-  const apiKey = prompt('Enter your Jellyfin API key:');
-  if (!apiKey) { setPill('Ready', 'gray'); return; }
   try {
-    const res  = await post('/api/browse', { server_url: cfg.server_url, api_key: apiKey });
+    // server_url and api_key are read server-side from saved config
+    const res  = await post('/api/browse', {});
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     allItems    = data.items;

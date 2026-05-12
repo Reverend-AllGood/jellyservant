@@ -6,7 +6,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 app = Flask(__name__)
 app.secret_key = "jellyservant_secret_2026_clifton"
-VERSION = "1.6.0"
+VERSION = "1.6.2"
 
 OUTPUT_BASE = os.getenv("OUTPUT_DIR", "/output")
 CONFIG_FILE = os.getenv("CONFIG_FILE", "/config/config.json")
@@ -44,9 +44,25 @@ def jf_get(url, key, endpoint, params=None):
     r.raise_for_status()
     return r.json()
 
-def jf_get_detail(url, key, item_id):
-    return jf_get(url, key, f"Items/{item_id}",
-                  {"Fields": "Genres,People,Overview,OfficialRating,CommunityRating,ProductionYear"})
+def jf_get_detail(url, key, item_id, fallback=None):
+    """
+    Fetch full item detail. If the server returns an error for the requested
+    Fields (e.g. 400 Bad Request), degrade gracefully:
+      1. Retry with no Fields param — accept whatever the server gives back.
+      2. If that also fails, return the fallback dict (basic data already
+         scraped from the library) so the NFO is written with partial info
+         rather than aborting the whole sync.
+    """
+    try:
+        return jf_get(url, key, f"Items/{item_id}",
+                      {"Fields": "Genres,People,Overview,OfficialRating,CommunityRating,ProductionYear"})
+    except Exception:
+        pass
+    try:
+        return jf_get(url, key, f"Items/{item_id}")
+    except Exception:
+        pass
+    return fallback or {}
 
 def safe_name(s):
     return "".join(c for c in s if c.isalnum() or c in (' ', '.', '_')).strip()
@@ -238,7 +254,7 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
 
         nfo_path = os.path.join(folder, "movie.nfo")
         if _needs_update(nfo_path, jf_date):
-            detail = jf_get_detail(server_url, api_key, m["Id"])
+            detail = jf_get_detail(server_url, api_key, m["Id"], fallback=m)
             write_movie_nfo(nfo_path, detail)
 
         save_poster(m["Id"], folder, server_url, api_key, jf_date)
@@ -274,7 +290,7 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
 
         nfo_path = os.path.join(s_folder, "tvshow.nfo")
         if _needs_update(nfo_path, jf_date):
-            detail = jf_get_detail(server_url, api_key, s["Id"])
+            detail = jf_get_detail(server_url, api_key, s["Id"], fallback=s)
             write_tvshow_nfo(nfo_path, detail)
 
         save_poster(s["Id"], s_folder, server_url, api_key, jf_date)
@@ -382,8 +398,13 @@ def api_save_config():
 @app.route('/api/browse', methods=['POST'])
 def api_browse():
     body = request.json
-    url  = body.get("server_url", "").rstrip("/")
-    key  = body.get("api_key", "")
+    cfg  = load_config()
+    url  = body.get("server_url", "").rstrip("/") or cfg.get("server_url", "").rstrip("/")
+    key  = body.get("api_key", "") or cfg.get("api_key", "")
+    if not url:
+        return jsonify({"error": "No server URL configured. Go to the Config tab first."}), 400
+    if not key:
+        return jsonify({"error": "No API key configured. Go to the Config tab first."}), 400
     try:
         movies = jf_get(url, key, "Items",
                         {"Recursive": "true", "IncludeItemTypes": "Movie",

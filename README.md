@@ -1,5 +1,3 @@
-<img width="1024" height="572" alt="jellyfin_skeleton_meal" src="https://github.com/user-attachments/assets/d2b6a679-db3e-43dd-9425-599d1e35ae4d" />
-
 # JellyServant
 
 **JellyServant** is a self-hosted web UI that syncs your Jellyfin library to `.strm` + `.nfo` files, making your media available to secondary Jellyfin servers or any Kodi-compatible player — without copying actual media files.
@@ -130,7 +128,7 @@ Open the **Config** tab in the UI and fill in:
 | Field | Description |
 |---|---|
 | **Source Jellyfin URL** | Full URL of your Jellyfin server, e.g. `https://jellyfin.example.com` |
-| **Bridge Domain** | The domain/IP that your secondary server will use to stream,this must be different than your actual jellyfin URL, e.g. `jellyservant.example.com` |
+| **Bridge Domain** | The domain/IP that your secondary server will use to stream, e.g. `jellyfin.example.com` |
 | **API Key** | Your Jellyfin API key (Dashboard → API Keys) |
 | **Proxy Username** | Username for the `.strm` auth credential (can be a Jellyfin user or proxy user) |
 | **Proxy Password** | Password for the above |
