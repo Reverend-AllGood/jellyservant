@@ -2,7 +2,7 @@
 
 **JellyServant** is a self-hosted web UI that syncs your Jellyfin library to `.strm` + `.nfo` files, making your media available to secondary Jellyfin servers or any Kodi-compatible player — without copying actual media files.
 
-> **Version 1.6** — Proxy-agnostic. Works with Nginx Proxy Manager, Traefik, Caddy, Cloudflare Tunnels, or plain HTTP on your LAN. No reverse proxy is required or bundled.
+> **Version 1.6.2** — Proxy-agnostic. Works with Nginx Proxy Manager, Traefik, Caddy, Cloudflare Tunnels, or plain HTTP on your LAN. No reverse proxy is required or bundled.
 
 ---
 
@@ -28,7 +28,7 @@
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/yourname/jellyservant.git
+git clone https://github.com/Reverend-AllGood/jellyservant.git
 cd jellyservant
 ```
 
