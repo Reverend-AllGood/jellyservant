@@ -1,4 +1,4 @@
-import os, json, requests, threading, shutil
+import os, json, requests, threading, shutil, uuid
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -6,29 +6,45 @@ from apscheduler.triggers.cron import CronTrigger
 
 app = Flask(__name__)
 app.secret_key = "jellyservant_secret_2026_clifton"
-VERSION = "1.6.3"
+VERSION = "1.8.0"
 
 OUTPUT_BASE = os.getenv("OUTPUT_DIR", "/output")
 CONFIG_FILE = os.getenv("CONFIG_FILE", "/config/config.json")
 LOG_MAX     = 50
 sync_lock   = threading.Lock()
 
+# ── Default user slots ────────────────────────────────────────────────────────
+
+DEFAULT_USERS = [
+    {"id": "shared", "label": "Shared",  "enabled": True,  "last_selection": [], "known_ids": []},
+    {"id": "user2",  "label": "User 2",  "enabled": False, "last_selection": [], "known_ids": []},
+    {"id": "user3",  "label": "User 3",  "enabled": False, "last_selection": [], "known_ids": []},
+    {"id": "user4",  "label": "User 4",  "enabled": False, "last_selection": [], "known_ids": []},
+    {"id": "user5",  "label": "User 5",  "enabled": False, "last_selection": [], "known_ids": []},
+]
+
 # ── Config ────────────────────────────────────────────────────────────────────
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE) as f:
-            return json.load(f)
+        cfg = json.load(open(CONFIG_FILE))
+        # Migrate: add users block if missing (upgrade from pre-1.8)
+        if "users" not in cfg:
+            cfg["users"] = [dict(u) for u in DEFAULT_USERS]
+            # Carry forward any old top-level selection into Shared slot
+            cfg["users"][0]["last_selection"] = cfg.pop("last_selection", [])
+            cfg["users"][0]["known_ids"]       = cfg.pop("known_ids", [])
+        return cfg
     return {
-        "server_url":     "",
-        "api_key":        "",
-        "sync_domain":    "",
-        "nx_user":        "",
-        "nx_pass":        "",
-        "schedules":      [],
-        "last_selection": [],   # IDs the user chose on their last manual sync
-        "known_ids":      [],   # all IDs that existed at time of first/last sync
-        "sync_log":       []
+        "server_url":   "",
+        "api_key":      "",
+        "sync_domain":  "",
+        "nx_user":      "",
+        "nx_pass":      "",
+        "server_name":  "",
+        "schedules":    [],
+        "sync_log":     [],
+        "users":        [dict(u) for u in DEFAULT_USERS],
     }
 
 def save_config(cfg):
@@ -36,9 +52,10 @@ def save_config(cfg):
     with open(CONFIG_FILE, "w") as f:
         json.dump(cfg, f, indent=2)
 
+def get_user(cfg, user_id):
+    return next((u for u in cfg.get("users", []) if u["id"] == user_id), None)
+
 def clean_domain(url):
-    """Strip http:// or https:// from a domain so it can be safely
-    embedded inside a https://user:pass@domain/... strm URL."""
     for prefix in ("https://", "http://"):
         if url.startswith(prefix):
             url = url[len(prefix):]
@@ -53,14 +70,6 @@ def jf_get(url, key, endpoint, params=None):
     return r.json()
 
 def jf_get_detail(url, key, item_id, fallback=None):
-    """
-    Fetch full item detail. If the server returns an error for the requested
-    Fields (e.g. 400 Bad Request), degrade gracefully:
-      1. Retry with no Fields param — accept whatever the server gives back.
-      2. If that also fails, return the fallback dict (basic data already
-         scraped from the library) so the NFO is written with partial info
-         rather than aborting the whole sync.
-    """
     try:
         return jf_get(url, key, f"Items/{item_id}",
                       {"Fields": "Genres,People,Overview,OfficialRating,CommunityRating,ProductionYear"})
@@ -71,6 +80,14 @@ def jf_get_detail(url, key, item_id, fallback=None):
     except Exception:
         pass
     return fallback or {}
+
+def jf_server_name(url, key):
+    """Fetch the Jellyfin server's friendly name from /System/Info."""
+    try:
+        info = jf_get(url, key, "System/Info")
+        return info.get("ServerName") or info.get("Name") or ""
+    except Exception:
+        return ""
 
 def safe_name(s):
     return "".join(c for c in s if c.isalnum() or c in (' ', '.', '_')).strip()
@@ -125,6 +142,51 @@ def write_tvshow_nfo(path, detail):
     with open(path, "w", encoding="utf-8") as f:
         f.write(nfo)
 
+def write_episode_nfo(path, detail, show_name):
+    nfo = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<episodedetails>
+  <title>{detail.get('Name', '')}</title>
+  <showtitle>{show_name}</showtitle>
+  <season>{detail.get('ParentIndexNumber', '')}</season>
+  <episode>{detail.get('IndexNumber', '')}</episode>
+  <plot>{detail.get('Overview', '')}</plot>
+  <mpaa>{detail.get('OfficialRating', '')}</mpaa>
+  <rating>{detail.get('CommunityRating', '')}</rating>
+  <year>{detail.get('ProductionYear', '')}</year>
+</episodedetails>"""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(nfo)
+
+# ── Subtitle downloader ───────────────────────────────────────────────────────
+
+def download_subtitles(server_url, api_key, item_id, dest_folder, base_name):
+    try:
+        detail  = jf_get(server_url, api_key, f"Items/{item_id}", {"Fields": "MediaStreams"})
+        streams = detail.get("MediaStreams", [])
+    except Exception:
+        return
+    for stream in streams:
+        if stream.get("Type") != "Subtitle" or stream.get("IsExternal"):
+            continue
+        index    = stream.get("Index")
+        lang     = stream.get("Language") or f"track{index}"
+        codec    = (stream.get("Codec") or "srt").lower()
+        ext      = "ass" if codec in ("ass", "ssa") else "srt"
+        sub_path = os.path.join(dest_folder, f"{base_name}.{lang}.{ext}")
+        if os.path.exists(sub_path):
+            continue
+        try:
+            r = requests.get(
+                f"{server_url}/Videos/{item_id}/{item_id}/Subtitles/{index}/Stream.{ext}",
+                headers={"X-Emby-Token": api_key}, timeout=30)
+            if r.status_code == 200:
+                with open(sub_path, "wb") as f:
+                    f.write(r.content)
+        except Exception:
+            pass
+
+# ── Poster downloader ─────────────────────────────────────────────────────────
+
 def save_poster(item_id, folder, url, key, jf_date=None):
     dest = os.path.join(folder, "poster.jpg")
     if os.path.exists(dest) and jf_date:
@@ -141,66 +203,57 @@ def save_poster(item_id, folder, url, key, jf_date=None):
         if r.status_code == 200:
             with open(dest, "wb") as f:
                 f.write(r.content)
-    except:
+    except Exception:
         pass
 
 # ── Orphan removal ────────────────────────────────────────────────────────────
 
-def remove_orphans(server_url, api_key, live_movie_ids, live_series_ids, live_episode_ids):
+def remove_orphans(output_root, live_movie_ids, live_series_ids, live_episode_ids):
     """
-    Walk the output folder. For every .strm file found, extract the Jellyfin
-    item ID from its URL. If that ID is no longer in the live library, delete
-    the entire containing folder (strm + nfo + poster).
-    Returns count of folders removed.
+    Walk output_root (a single user slot's folder).
+    Delete folders whose .strm item ID is no longer in the live library.
     """
-    removed = 0
+    removed  = 0
     all_live = live_movie_ids | live_series_ids | live_episode_ids
 
-    for root, dirs, files in os.walk(OUTPUT_BASE, topdown=False):
+    for root, dirs, files in os.walk(output_root, topdown=False):
         for fname in files:
             if not fname.endswith(".strm"):
                 continue
             strm_path = os.path.join(root, fname)
             try:
-                content = open(strm_path).read().strip()
-                # Extract ID from URL pattern /Videos/<ID>/stream
-                parts = content.split("/Videos/")
+                content  = open(strm_path).read().strip()
+                parts    = content.split("/Videos/")
                 if len(parts) < 2:
                     continue
-                item_id = parts[1].split("/")[0]
+                item_id  = parts[1].split("/")[0]
             except Exception:
                 continue
-
             if item_id not in all_live:
-                # Delete the entire folder this .strm lives in
-                folder_to_delete = root
-                if os.path.exists(folder_to_delete):
-                    shutil.rmtree(folder_to_delete, ignore_errors=True)
+                if os.path.exists(root):
+                    shutil.rmtree(root, ignore_errors=True)
                     removed += 1
-                break  # folder is gone, stop iterating its files
+                break
 
-    # Clean up any empty parent directories
+    # Clean up empty show/movie parent dirs
     for top in ["Movies", "TV Shows"]:
-        top_path = os.path.join(OUTPUT_BASE, top)
+        top_path = os.path.join(output_root, top)
         if not os.path.exists(top_path):
             continue
         for entry in os.listdir(top_path):
-            entry_path = os.path.join(top_path, entry)
-            if os.path.isdir(entry_path) and not os.listdir(entry_path):
-                os.rmdir(entry_path)
+            ep = os.path.join(top_path, entry)
+            if os.path.isdir(ep) and not os.listdir(ep):
+                os.rmdir(ep)
 
     return removed
 
 # ── Core sync ─────────────────────────────────────────────────────────────────
 
 def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
-            selected_ids=None, auto_add_new=False, known_ids=None):
+            output_root, selected_ids=None, auto_add_new=False, known_ids=None):
     """
-    Sync selected items. Returns (movies_written, shows_written, removed_count, new_ids_added).
-
-    auto_add_new=True  — any ID in the current library that is NOT in known_ids
-                         gets added to selected_ids automatically.
-    known_ids          — set of IDs seen at time of last selection snapshot.
+    Sync media for a single user slot into output_root.
+    Returns (movies_written, shows_written, removed_count, new_ids_added).
     """
     movies_data = jf_get(server_url, api_key, "Items",
                          {"Recursive": "true", "IncludeItemTypes": "Movie",
@@ -229,17 +282,15 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
     # ── Auto-add new items ────────────────────────────────────────
     new_ids_added = []
     if auto_add_new and known_ids is not None:
-        known_set   = set(known_ids)
-        all_live    = live_movie_ids | live_series_ids
-        new_in_lib  = all_live - known_set
+        known_set  = set(known_ids)
+        new_in_lib = (live_movie_ids | live_series_ids) - known_set
         if new_in_lib and selected_ids is not None:
             new_ids_added = list(new_in_lib)
             selected_ids  = set(selected_ids) | new_in_lib
 
-    # Apply selection filter
     selected = set(selected_ids) if selected_ids is not None else None
-    movies   = [m for m in all_movies  if selected is None or m["Id"] in selected]
-    series   = [s for s in all_series  if selected is None or s["Id"] in selected]
+    movies   = [m for m in all_movies if selected is None or m["Id"] in selected]
+    series   = [s for s in all_series if selected is None or s["Id"] in selected]
 
     movies_written = 0
     shows_written  = 0
@@ -247,7 +298,7 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
     # ── Movies ───────────────────────────────────────────────────
     for m in movies:
         sn     = safe_name(m["Name"])
-        folder = os.path.join(OUTPUT_BASE, "Movies",
+        folder = os.path.join(output_root, "Movies",
                               f"{sn} ({m.get('ProductionYear', '0000')})")
         os.makedirs(folder, exist_ok=True)
         jf_date   = m.get("DateModified")
@@ -266,16 +317,17 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
             write_movie_nfo(nfo_path, detail)
 
         save_poster(m["Id"], folder, server_url, api_key, jf_date)
+        download_subtitles(server_url, api_key, m["Id"], folder, sn)
 
     # ── TV Shows ─────────────────────────────────────────────────
     for s in series:
         sn       = safe_name(s["Name"])
-        s_folder = os.path.join(OUTPUT_BASE, "TV Shows", sn)
+        s_folder = os.path.join(output_root, "TV Shows", sn)
         os.makedirs(s_folder, exist_ok=True)
         jf_date  = s.get("DateModified")
 
-        ep_data          = jf_get(server_url, api_key, f"Shows/{s['Id']}/Episodes",
-                                  {"Fields": "DateModified"})
+        ep_data = jf_get(server_url, api_key, f"Shows/{s['Id']}/Episodes",
+                         {"Fields": "DateModified,Name,Overview,OfficialRating,CommunityRating,ProductionYear"})
         show_had_changes = False
 
         for ep in ep_data.get("Items", []):
@@ -284,7 +336,8 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
             season_folder = os.path.join(s_folder, f"Season {season_num}")
             os.makedirs(season_folder, exist_ok=True)
 
-            strm_path = os.path.join(season_folder, f"{sn} - S{season_num}E{ep_num}.strm")
+            base_name = f"{sn} - S{season_num}E{ep_num}"
+            strm_path = os.path.join(season_folder, f"{base_name}.strm")
             strm_url  = (f"https://{nx_user}:{nx_pass}@{clean_domain(sync_domain)}"
                          f"/Videos/{ep['Id']}/stream?static=true")
 
@@ -292,6 +345,12 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
                 with open(strm_path, "w") as f:
                     f.write(strm_url)
                 show_had_changes = True
+
+            ep_nfo_path = os.path.join(season_folder, f"{base_name}.nfo")
+            if _needs_update(ep_nfo_path, ep.get("DateModified")):
+                write_episode_nfo(ep_nfo_path, ep, s["Name"])
+
+            download_subtitles(server_url, api_key, ep["Id"], season_folder, base_name)
 
         if show_had_changes:
             shows_written += 1
@@ -304,10 +363,17 @@ def do_sync(server_url, api_key, sync_domain, nx_user, nx_pass,
         save_poster(s["Id"], s_folder, server_url, api_key, jf_date)
 
     # ── Orphan removal ───────────────────────────────────────────
-    removed = remove_orphans(server_url, api_key,
-                             live_movie_ids, live_series_ids, live_episode_ids)
+    removed = remove_orphans(output_root, live_movie_ids, live_series_ids, live_episode_ids)
 
     return movies_written, shows_written, removed, new_ids_added
+
+# ── Output path helper ────────────────────────────────────────────────────────
+
+def user_output_root(server_name, user_label):
+    """output/<ServerName>/<UserLabel>/"""
+    sn = safe_name(server_name) if server_name else "Server"
+    ul = safe_name(user_label)  if user_label  else "Shared"
+    return os.path.join(OUTPUT_BASE, sn, ul)
 
 # ── Scheduled sync ────────────────────────────────────────────────────────────
 
@@ -318,34 +384,38 @@ def run_scheduled_sync(schedule_id):
         if not sched or not sched.get("enabled"):
             return
 
+        user = get_user(cfg, sched.get("user_id", "shared"))
+        if not user or not user.get("enabled"):
+            return
+
         auto_add  = sched.get("auto_add_new", False)
-        known_ids = cfg.get("known_ids", [])
+        known_ids = user.get("known_ids", [])
+        selected  = None if sched.get("scope") == "full" else (user.get("last_selection") or None)
 
-        if sched.get("scope") == "full":
-            selected = None
-        else:
-            selected = cfg.get("last_selection") or None
+        output_root = user_output_root(cfg.get("server_name", ""), user["label"])
+        timestamp   = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         try:
             m, s, removed, added = do_sync(
                 cfg["server_url"], cfg["api_key"], cfg["sync_domain"],
                 cfg["nx_user"],   cfg["nx_pass"],
+                output_root=output_root,
                 selected_ids=selected,
                 auto_add_new=auto_add,
                 known_ids=known_ids
             )
-            # Update known_ids and last_selection to include any newly added items
             if added:
-                cfg["known_ids"]      = list(set(known_ids) | set(added))
-                if cfg.get("last_selection"):
-                    cfg["last_selection"] = list(set(cfg["last_selection"]) | set(added))
+                user["known_ids"]       = list(set(known_ids) | set(added))
+                if user.get("last_selection"):
+                    user["last_selection"] = list(set(user["last_selection"]) | set(added))
 
             entry = {"ts": timestamp, "trigger": sched["label"],
+                     "user": user["label"],
                      "movies": m, "shows": s, "removed": removed,
                      "added": len(added), "error": None}
         except Exception as e:
             entry = {"ts": timestamp, "trigger": sched["label"],
+                     "user": user["label"],
                      "movies": 0, "shows": 0, "removed": 0,
                      "added": 0, "error": str(e)}
 
@@ -386,6 +456,8 @@ def index():
 def serve_bg():
     return send_from_directory('.', 'jellyfin_skeleton_meal.jpg')
 
+# ── Config ────────────────────────────────────────────────────────────────────
+
 @app.route('/api/config', methods=['GET'])
 def api_get_config():
     cfg = load_config()
@@ -400,15 +472,66 @@ def api_save_config():
     for field in ("server_url", "api_key", "sync_domain", "nx_user", "nx_pass"):
         if body.get(field):
             cfg[field] = body[field]
+    # Auto-fetch server name if we have a URL and key and name isn't set yet
+    if cfg.get("server_url") and cfg.get("api_key") and not cfg.get("server_name"):
+        cfg["server_name"] = jf_server_name(cfg["server_url"], cfg["api_key"])
+    save_config(cfg)
+    return jsonify({"ok": True, "server_name": cfg.get("server_name", "")})
+
+@app.route('/api/server-name', methods=['POST'])
+def api_fetch_server_name():
+    """Explicitly re-fetch and store the server name."""
+    cfg = load_config()
+    url = cfg.get("server_url", "")
+    key = cfg.get("api_key", "")
+    if not url or not key:
+        return jsonify({"error": "Server URL and API key must be configured first."}), 400
+    name = jf_server_name(url, key)
+    if not name:
+        return jsonify({"error": "Could not retrieve server name. Check URL and API key."}), 502
+    cfg["server_name"] = name
+    save_config(cfg)
+    return jsonify({"server_name": name})
+
+# ── Users ─────────────────────────────────────────────────────────────────────
+
+@app.route('/api/users', methods=['GET'])
+def api_get_users():
+    return jsonify(load_config().get("users", []))
+
+@app.route('/api/users', methods=['POST'])
+def api_save_users():
+    """
+    Accept the full users array from the UI.
+    Shared slot label is always locked to 'Shared'; id is always 'shared'.
+    """
+    cfg   = load_config()
+    body  = request.json  # list of {id, label, enabled}
+    users = cfg.get("users", [dict(u) for u in DEFAULT_USERS])
+
+    for incoming in body:
+        uid  = incoming.get("id")
+        slot = next((u for u in users if u["id"] == uid), None)
+        if slot is None:
+            continue
+        if uid == "shared":
+            slot["enabled"] = True   # Shared is always on
+            slot["label"]   = "Shared"
+        else:
+            slot["label"]   = incoming.get("label", slot["label"]) or slot["label"]
+            slot["enabled"] = bool(incoming.get("enabled", slot["enabled"]))
+
+    cfg["users"] = users
     save_config(cfg)
     return jsonify({"ok": True})
 
+# ── Browse ────────────────────────────────────────────────────────────────────
+
 @app.route('/api/browse', methods=['POST'])
 def api_browse():
-    body = request.json
-    cfg  = load_config()
-    url  = body.get("server_url", "").rstrip("/") or cfg.get("server_url", "").rstrip("/")
-    key  = body.get("api_key", "") or cfg.get("api_key", "")
+    cfg = load_config()
+    url = cfg.get("server_url", "").rstrip("/")
+    key = cfg.get("api_key", "")
     if not url:
         return jsonify({"error": "No server URL configured. Go to the Config tab first."}), 400
     if not key:
@@ -430,31 +553,42 @@ def api_browse():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ── Sync ──────────────────────────────────────────────────────────────────────
+
 @app.route('/api/sync', methods=['POST'])
 def api_sync():
+    """Sync a single user slot."""
     body      = request.json
     cfg       = load_config()
+    user_id   = body.get("user_id", "shared")
+    user      = get_user(cfg, user_id)
+    if not user:
+        return jsonify({"error": f"Unknown user slot '{user_id}'"}), 400
+
     selected  = body.get("selected_ids") or None
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    output_root = user_output_root(cfg.get("server_name", ""), user["label"])
+
     try:
         m, s, removed, added = do_sync(
             cfg["server_url"], cfg["api_key"], cfg["sync_domain"],
             cfg["nx_user"],   cfg["nx_pass"],
+            output_root=output_root,
             selected_ids=selected
         )
-        if selected:
-            # Snapshot what was selected and what the full library looked like
-            cfg["last_selection"] = list(selected)
-            # known_ids = everything that existed at browse time (passed from UI)
-            known = body.get("known_ids")
-            if known:
-                cfg["known_ids"] = known
+        if selected is not None:
+            user["last_selection"] = list(selected)
+        known = body.get("known_ids")
+        if known:
+            user["known_ids"] = known
 
         entry = {"ts": timestamp, "trigger": "Manual",
+                 "user": user["label"],
                  "movies": m, "shows": s, "removed": removed,
                  "added": 0, "error": None}
     except Exception as e:
         entry = {"ts": timestamp, "trigger": "Manual",
+                 "user": user["label"],
                  "movies": 0, "shows": 0, "removed": 0,
                  "added": 0, "error": str(e)}
 
@@ -462,13 +596,49 @@ def api_sync():
     save_config(cfg)
     return jsonify(entry)
 
+@app.route('/api/sync-all', methods=['POST'])
+def api_sync_all():
+    """Sync all enabled user slots sequentially. Returns list of per-user results."""
+    cfg       = load_config()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    results   = []
+
+    for user in cfg.get("users", []):
+        if not user.get("enabled"):
+            continue
+        selected    = user.get("last_selection") or None
+        output_root = user_output_root(cfg.get("server_name", ""), user["label"])
+        try:
+            m, s, removed, added = do_sync(
+                cfg["server_url"], cfg["api_key"], cfg["sync_domain"],
+                cfg["nx_user"],   cfg["nx_pass"],
+                output_root=output_root,
+                selected_ids=selected
+            )
+            entry = {"ts": timestamp, "trigger": "Sync All",
+                     "user": user["label"],
+                     "movies": m, "shows": s, "removed": removed,
+                     "added": 0, "error": None}
+        except Exception as e:
+            entry = {"ts": timestamp, "trigger": "Sync All",
+                     "user": user["label"],
+                     "movies": 0, "shows": 0, "removed": 0,
+                     "added": 0, "error": str(e)}
+
+        results.append(entry)
+        cfg["sync_log"] = ([entry] + cfg.get("sync_log", []))[:LOG_MAX]
+
+    save_config(cfg)
+    return jsonify(results)
+
+# ── Schedules ─────────────────────────────────────────────────────────────────
+
 @app.route('/api/schedules', methods=['GET'])
 def api_get_schedules():
     return jsonify(load_config().get("schedules", []))
 
 @app.route('/api/schedules', methods=['POST'])
 def api_save_schedule():
-    import uuid
     body      = request.json
     cfg       = load_config()
     schedules = cfg.get("schedules", [])
@@ -476,11 +646,12 @@ def api_save_schedule():
     sched     = {
         "id":           sid,
         "label":        body.get("label", "Auto Sync"),
+        "user_id":      body.get("user_id", "shared"),
         "days":         body.get("days", ["mon"]),
         "hour":         int(body.get("hour", 3)),
         "minute":       int(body.get("minute", 0)),
         "timezone":     body.get("timezone", "UTC"),
-        "scope":        body.get("scope", "full"),
+        "scope":        body.get("scope", "selection"),
         "auto_add_new": body.get("auto_add_new", False),
         "enabled":      body.get("enabled", True)
     }
@@ -492,11 +663,13 @@ def api_save_schedule():
 
 @app.route('/api/schedules/<sid>', methods=['DELETE'])
 def api_delete_schedule(sid):
-    cfg             = load_config()
+    cfg              = load_config()
     cfg["schedules"] = [s for s in cfg.get("schedules", []) if s["id"] != sid]
     save_config(cfg)
     reload_schedules()
     return jsonify({"ok": True})
+
+# ── Log / Version ─────────────────────────────────────────────────────────────
 
 @app.route('/api/log', methods=['GET'])
 def api_log():

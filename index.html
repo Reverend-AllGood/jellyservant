@@ -2,118 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>JellyServant 1.6.2</title>
+  <title>JellyServant 1.8.0</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    /* ── Base ── */
     * { box-sizing: border-box; }
     body {
       background-image: url('/jellyfin_skeleton_meal.jpg');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-      min-height: 100vh;
-      margin: 0;
+      background-size: cover; background-position: center top;
+      background-repeat: no-repeat; background-attachment: fixed;
+      min-height: 100vh; margin: 0;
       background-color: #0a0c10;
       font-family: 'Segoe UI', system-ui, sans-serif;
     }
-
-    /* ── Cards ── */
     .card {
-      background: rgba(10, 14, 22, 0.97);
-      border: 1px solid rgba(56, 189, 248, 0.18);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
+      background: rgba(10,14,22,0.97);
+      border: 1px solid rgba(56,189,248,0.18);
+      border-radius: 12px; padding: 1.25rem 1.5rem;
     }
     .card-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #38bdf8;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
+      font-size: 13px; font-weight: 600; color: #38bdf8;
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1rem;
     }
-
-    /* ── Form elements ── */
     label.field-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #cbd5e1;
-      margin-bottom: 5px;
-      letter-spacing: 0.04em;
+      display: block; font-size: 12px; font-weight: 600;
+      color: #cbd5e1; margin-bottom: 5px; letter-spacing: 0.04em;
     }
     input[type=text], input[type=password], input[type=number], select {
-      width: 100%;
-      padding: 9px 12px;
-      background: #0f1623;
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 7px;
-      color: #f1f5f9;
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.15s;
+      width: 100%; padding: 9px 12px; background: #0f1623;
+      border: 1px solid rgba(56,189,248,0.25); border-radius: 7px;
+      color: #f1f5f9; font-size: 13px; outline: none; transition: border-color 0.15s;
     }
-    input:focus, select:focus {
-      border-color: rgba(56, 189, 248, 0.7);
-    }
+    input:focus, select:focus { border-color: rgba(56,189,248,0.7); }
     select option { background: #0f1623; color: #f1f5f9; }
 
     /* ── Tabs ── */
-    .tabs {
-      display: flex;
-      gap: 2px;
-      border-bottom: 1px solid rgba(56, 189, 248, 0.15);
-      margin-bottom: 1rem;
-    }
+    .tabs { display: flex; gap: 2px; border-bottom: 1px solid rgba(56,189,248,0.15); margin-bottom: 1rem; }
     .tab {
-      padding: 9px 20px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #64748b;
-      cursor: pointer;
-      border-radius: 8px 8px 0 0;
-      border: 1px solid transparent;
-      border-bottom: none;
-      transition: color 0.15s, background 0.15s;
-      letter-spacing: 0.03em;
+      padding: 9px 20px; font-size: 13px; font-weight: 600; color: #64748b;
+      cursor: pointer; border-radius: 8px 8px 0 0;
+      border: 1px solid transparent; border-bottom: none;
+      transition: color 0.15s, background 0.15s; letter-spacing: 0.03em;
     }
     .tab:hover { color: #94a3b8; background: rgba(56,189,248,0.04); }
     .tab.active {
-      color: #38bdf8;
-      background: rgba(10, 14, 22, 0.97);
-      border-color: rgba(56, 189, 248, 0.18);
-      border-bottom-color: rgba(10, 14, 22, 0.97);
+      color: #38bdf8; background: rgba(10,14,22,0.97);
+      border-color: rgba(56,189,248,0.18); border-bottom-color: rgba(10,14,22,0.97);
       margin-bottom: -1px;
     }
     .panel { display: none; }
     .panel.active { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* ── User slot tabs (inside Sync panel) ── */
+    .user-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 1rem; }
+    .user-tab {
+      padding: 6px 16px; font-size: 12px; font-weight: 600; color: #64748b;
+      cursor: pointer; border-radius: 20px;
+      border: 1px solid rgba(100,116,139,0.3); transition: all 0.15s;
+    }
+    .user-tab:hover { color: #94a3b8; border-color: rgba(56,189,248,0.3); }
+    .user-tab.active {
+      color: #38bdf8; background: rgba(14,165,233,0.12);
+      border-color: rgba(56,189,248,0.5);
+    }
 
     /* ── Buttons ── */
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 6px; padding: 9px 18px; border-radius: 8px;
       font-size: 13px; font-weight: 600; cursor: pointer;
-      transition: all 0.15s; border: 1px solid transparent;
-      letter-spacing: 0.02em;
+      transition: all 0.15s; border: 1px solid transparent; letter-spacing: 0.02em;
     }
-    .btn-primary {
-      background: #0ea5e9;
-      border-color: #0284c7;
-      color: #ffffff;
-    }
+    .btn-primary   { background: #0ea5e9; border-color: #0284c7; color: #fff; }
     .btn-primary:hover { background: #38bdf8; }
-    .btn-success {
-      background: #16a34a;
-      border-color: #15803d;
-      color: #ffffff;
-    }
+    .btn-success   { background: #16a34a; border-color: #15803d; color: #fff; }
     .btn-success:hover { background: #22c55e; }
+    .btn-purple    { background: #7c3aed; border-color: #6d28d9; color: #fff; }
+    .btn-purple:hover  { background: #8b5cf6; }
     .btn-ghost {
-      background: transparent;
-      border-color: rgba(100, 116, 139, 0.4);
-      color: #94a3b8;
+      background: transparent; border-color: rgba(100,116,139,0.4); color: #94a3b8;
     }
     .btn-ghost:hover { background: rgba(255,255,255,0.05); color: #cbd5e1; border-color: rgba(100,116,139,0.7); }
     .btn-danger { color: #f87171; background: transparent; border-color: transparent; font-size: 12px; }
@@ -130,27 +96,20 @@
     .badge-amber { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
     .badge-red   { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
     .badge-gray  { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.25); }
+    .badge-purple{ background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
 
-    /* ── Status pill ── */
-    #status-pill {
-      font-size: 12px; font-weight: 600; padding: 4px 14px;
-      border-radius: 20px; letter-spacing: 0.04em;
-    }
+    #status-pill { font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 20px; letter-spacing: 0.04em; }
 
     /* ── Library list ── */
     #library-list {
-      max-height: 320px;
-      overflow-y: auto;
-      border: 1px solid rgba(56,189,248,0.15);
-      border-radius: 8px;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(56,189,248,0.3) transparent;
+      max-height: 300px; overflow-y: auto;
+      border: 1px solid rgba(56,189,248,0.15); border-radius: 8px;
+      scrollbar-width: thin; scrollbar-color: rgba(56,189,248,0.3) transparent;
     }
     .item-row {
       display: flex; align-items: center; gap: 10px;
       padding: 9px 12px; cursor: pointer;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      transition: background 0.1s;
+      border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.1s;
     }
     .item-row:last-child { border-bottom: none; }
     .item-row:hover { background: rgba(56,189,248,0.06); }
@@ -158,31 +117,23 @@
     .item-year { font-size: 12px; color: #64748b; }
     .checkmark {
       width: 17px; height: 17px; border-radius: 4px; flex-shrink: 0;
-      border: 1px solid rgba(100,116,139,0.5);
-      background: #0f1623;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.1s;
+      border: 1px solid rgba(100,116,139,0.5); background: #0f1623;
+      display: flex; align-items: center; justify-content: center; transition: all 0.1s;
     }
-    .checkmark.on {
-      background: #0ea5e9;
-      border-color: #38bdf8;
-    }
+    .checkmark.on { background: #0ea5e9; border-color: #38bdf8; }
 
     /* ── Day picker ── */
     .day-btn {
       padding: 5px 11px; border-radius: 6px; font-size: 12px; font-weight: 600;
       cursor: pointer; border: 1px solid rgba(100,116,139,0.35);
-      color: #64748b; background: transparent; transition: all 0.15s;
-      letter-spacing: 0.03em;
+      color: #64748b; background: transparent; transition: all 0.15s; letter-spacing: 0.03em;
     }
     .day-btn:hover { border-color: rgba(56,189,248,0.4); color: #94a3b8; }
     .day-btn.on { background: rgba(14,165,233,0.2); border-color: #0ea5e9; color: #38bdf8; }
 
-    /* ── Toggle switch ── */
+    /* ── Toggle ── */
     .toggle-wrap { display: flex; align-items: center; gap: 10px; }
-    .toggle {
-      position: relative; width: 38px; height: 20px; flex-shrink: 0;
-    }
+    .toggle { position: relative; width: 38px; height: 20px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-track {
       position: absolute; inset: 0; border-radius: 20px;
@@ -191,22 +142,24 @@
     }
     .toggle-track::after {
       content: ''; position: absolute; width: 14px; height: 14px;
-      border-radius: 50%; background: #64748b; top: 2px; left: 2px;
-      transition: all 0.2s;
+      border-radius: 50%; background: #64748b; top: 2px; left: 2px; transition: all 0.2s;
     }
-    .toggle input:checked + .toggle-track {
-      background: rgba(14,165,233,0.3); border-color: #0ea5e9;
-    }
-    .toggle input:checked + .toggle-track::after {
-      background: #38bdf8; transform: translateX(18px);
-    }
+    .toggle input:checked + .toggle-track { background: rgba(14,165,233,0.3); border-color: #0ea5e9; }
+    .toggle input:checked + .toggle-track::after { background: #38bdf8; transform: translateX(18px); }
     .toggle-label { font-size: 13px; font-weight: 500; color: #cbd5e1; }
-    .toggle-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .toggle-desc  { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+    /* ── User slot card (Config tab) ── */
+    .user-slot-card {
+      background: #0f1623; border: 1px solid rgba(56,189,248,0.12);
+      border-radius: 8px; padding: 12px 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .user-slot-card.shared-slot { border-color: rgba(56,189,248,0.3); }
 
     /* ── Schedule card ── */
     .sched-card {
-      background: #0f1623;
-      border: 1px solid rgba(56,189,248,0.12);
+      background: #0f1623; border: 1px solid rgba(56,189,248,0.12);
       border-radius: 8px; padding: 12px 14px;
       display: flex; align-items: flex-start; gap: 12px;
     }
@@ -215,47 +168,40 @@
 
     /* ── Log table ── */
     .log-header {
-      display: grid; grid-template-columns: 130px 110px 90px 70px 70px 60px;
-      gap: 8px; padding: 6px 10px;
+      display: grid; grid-template-columns: 120px 100px 90px 80px 70px 70px 55px;
+      gap: 6px; padding: 6px 10px;
       font-size: 11px; font-weight: 700; color: #38bdf8;
       letter-spacing: 0.06em; text-transform: uppercase;
       border-bottom: 1px solid rgba(56,189,248,0.15);
     }
     .log-row {
-      display: grid; grid-template-columns: 130px 110px 90px 70px 70px 60px;
-      gap: 8px; padding: 8px 10px;
+      display: grid; grid-template-columns: 120px 100px 90px 80px 70px 70px 55px;
+      gap: 6px; padding: 8px 10px;
       font-size: 12px; color: #94a3b8;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.03); align-items: center;
     }
     .log-row:hover { background: rgba(56,189,248,0.03); }
 
-    /* ── Alert banner ── */
-    .alert {
-      padding: 10px 14px; border-radius: 8px;
-      font-size: 13px; font-weight: 500; display: none;
-    }
-    .alert-success { background: rgba(22,163,74,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
-    .alert-error   { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #f87171; }
-    .alert-info    { background: rgba(14,165,233,0.12);  border: 1px solid rgba(14,165,233,0.3);  color: #38bdf8; }
+    /* ── Alert ── */
+    .alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; display: none; }
+    .alert-success { background: rgba(22,163,74,0.15);  border: 1px solid rgba(34,197,94,0.3);   color: #4ade80; }
+    .alert-error   { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);   color: #f87171; }
+    .alert-info    { background: rgba(14,165,233,0.12); border: 1px solid rgba(14,165,233,0.3);  color: #38bdf8; }
 
-    /* ── Divider ── */
     .divider { height: 1px; background: rgba(56,189,248,0.1); margin: 4px 0; }
-
-    /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.25); border-radius: 3px; }
   </style>
 </head>
 <body class="p-5">
-<div style="max-width:680px; margin:0 auto; padding-top:1.5rem;">
+<div style="max-width:720px; margin:0 auto; padding-top:1.5rem;">
 
   <!-- ── Header ── -->
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
     <div>
       <div style="font-size:22px; font-weight:700; color:#38bdf8; letter-spacing:0.02em;">JellyServant</div>
-      <div style="font-size:11px; color:#475569; font-weight:500; letter-spacing:0.05em;">VERSION 1.6.2</div>
+      <div style="font-size:11px; color:#475569; font-weight:500; letter-spacing:0.05em;">VERSION 1.8.0</div>
     </div>
     <div id="status-pill" class="badge badge-gray">Ready</div>
   </div>
@@ -273,12 +219,26 @@
   ════════════════════════════════════════ -->
   <div id="tab-sync" class="panel active">
 
-    <div class="card">
-      <div class="card-title">Library Browser</div>
+    <!-- Sync All button -->
+    <button class="btn btn-purple" style="width:100%; padding:13px;" onclick="runSyncAll()">
+      ⚡ Sync All Users
+    </button>
 
-      <!-- Browse controls -->
+    <!-- User slot tabs -->
+    <div class="card" style="padding-bottom:0.75rem;">
+      <div class="card-title" style="margin-bottom:0.5rem;">User Slots</div>
+      <div id="user-tabs" class="user-tabs"></div>
+    </div>
+
+    <!-- Per-user library browser -->
+    <div class="card" id="user-sync-panel">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+        <div class="card-title" style="margin-bottom:0;" id="user-panel-title">Library</div>
+        <button class="btn btn-primary btn-sm" onclick="browseLibrary()">Load Library</button>
+      </div>
+
+      <!-- Filters -->
       <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="browseLibrary()">Load Library</button>
         <input id="filter-text" type="text" placeholder="Filter titles…" oninput="renderList()"
                style="flex:1; min-width:120px;">
         <select id="filter-type" onchange="renderList()" style="width:110px;">
@@ -288,7 +248,7 @@
         </select>
       </div>
 
-      <!-- Bulk select buttons -->
+      <!-- Bulk controls -->
       <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" onclick="selectAll()">All</button>
         <button class="btn btn-ghost btn-sm" onclick="selectNone()">None</button>
@@ -297,17 +257,15 @@
         <span id="sel-summary" style="margin-left:auto; font-size:12px; color:#64748b; font-weight:500;"></span>
       </div>
 
-      <!-- Item list -->
       <div id="library-list">
         <div style="padding:20px; text-align:center; color:#475569; font-size:13px;">
-          Click "Load Library" to fetch your media from the configured Jellyfin server.
+          Select a user slot above, then click "Load Library".
         </div>
       </div>
     </div>
 
-    <!-- Sync button -->
     <button class="btn btn-success" style="width:100%; padding:13px;" onclick="runManualSync()">
-      &#x1F680; Sync Selected Now
+      🚀 Sync This User
     </button>
 
     <div id="sync-alert" class="alert"></div>
@@ -318,26 +276,31 @@
   ════════════════════════════════════════ -->
   <div id="tab-schedules" class="panel">
 
-    <!-- Builder -->
     <div class="card">
       <div class="card-title">New Schedule</div>
-
       <div style="display:flex; flex-direction:column; gap:12px;">
-        <div>
-          <label class="field-label">Schedule Label</label>
-          <input id="s-label" type="text" value="Auto Sync">
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
+            <label class="field-label">Schedule Label</label>
+            <input id="s-label" type="text" value="Auto Sync">
+          </div>
+          <div>
+            <label class="field-label">User Slot</label>
+            <select id="s-user"></select>
+          </div>
         </div>
 
         <div>
           <label class="field-label" style="margin-bottom:8px;">Days of Week</label>
           <div style="display:flex; gap:6px; flex-wrap:wrap;" id="day-picker">
             <div class="day-btn on" data-day="mon">Mon</div>
-            <div class="day-btn"    data-day="tue">Tue</div>
-            <div class="day-btn"    data-day="wed">Wed</div>
-            <div class="day-btn"    data-day="thu">Thu</div>
-            <div class="day-btn"    data-day="fri">Fri</div>
-            <div class="day-btn"    data-day="sat">Sat</div>
-            <div class="day-btn"    data-day="sun">Sun</div>
+            <div class="day-btn" data-day="tue">Tue</div>
+            <div class="day-btn" data-day="wed">Wed</div>
+            <div class="day-btn" data-day="thu">Thu</div>
+            <div class="day-btn" data-day="fri">Fri</div>
+            <div class="day-btn" data-day="sat">Sat</div>
+            <div class="day-btn" data-day="sun">Sun</div>
           </div>
         </div>
 
@@ -353,15 +316,14 @@
           <div>
             <label class="field-label">Scope</label>
             <select id="s-scope">
+              <option value="selection">User's selection</option>
               <option value="full">Full library</option>
-              <option value="selection">Last selection</option>
             </select>
           </div>
         </div>
 
         <div class="divider"></div>
 
-        <!-- Auto-add toggle -->
         <div class="toggle-wrap">
           <label class="toggle">
             <input type="checkbox" id="s-auto-add">
@@ -370,9 +332,7 @@
           <div>
             <div class="toggle-label">Auto-add new library items</div>
             <div class="toggle-desc">
-              When enabled, any title added to your Jellyfin server since the last sync
-              will be automatically included in this schedule's next run.
-              Items you deliberately excluded from your original selection are never added.
+              Any title added to Jellyfin since the last sync is automatically included in this run.
             </div>
           </div>
         </div>
@@ -383,7 +343,6 @@
       </div>
     </div>
 
-    <!-- Saved schedules -->
     <div class="card">
       <div class="card-title">Active Schedules</div>
       <div id="schedules-list">
@@ -404,6 +363,7 @@
       <div class="log-header">
         <span>Time</span>
         <span>Trigger</span>
+        <span>User</span>
         <span>Updated</span>
         <span>Removed</span>
         <span>Added</span>
@@ -417,83 +377,191 @@
        TAB: CONFIG
   ════════════════════════════════════════ -->
   <div id="tab-config" class="panel">
+
+    <!-- Output folder info -->
+    <div class="card" style="border-color: rgba(251,191,36,0.25);">
+      <div class="card-title" style="color:#fbbf24;">📁 Output Folder</div>
+      <div style="font-size:13px; color:#94a3b8; line-height:1.6;">
+        Files are written to <code style="color:#fbbf24;">./output/&lt;ServerName&gt;/&lt;UserSlot&gt;/</code>
+        — one folder per user, nested under your Jellyfin server's name.
+      </div>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:4px;">
+        <div style="font-size:12px; color:#64748b;">
+          <span style="color:#38bdf8;">Movies</span> →
+          <code style="color:#94a3b8;">./output/MyServer/Shared/Movies/Title (Year)/</code>
+        </div>
+        <div style="font-size:12px; color:#64748b;">
+          <span style="color:#4ade80;">TV Shows</span> →
+          <code style="color:#94a3b8;">./output/MyServer/Cliff/TV Shows/Show Name/Season XX/</code>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:11px; color:#475569; border-top:1px solid rgba(56,189,248,0.08); padding-top:10px;">
+        Point each secondary Jellyfin server at its own user slot folder. The server name is
+        fetched automatically from your Jellyfin API and shown below.
+      </div>
+    </div>
+
+    <!-- Server config -->
     <div class="card">
       <div class="card-title">Server Config</div>
       <div style="display:flex; flex-direction:column; gap:12px;">
+
+        <!-- Server name (read-only) -->
+        <div>
+          <label class="field-label">Source Server Name
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— fetched automatically from Jellyfin</span>
+          </label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div id="server-name-display"
+                 style="flex:1; padding:9px 12px; background:#0f1623; border:1px solid rgba(56,189,248,0.15);
+                        border-radius:7px; color:#fbbf24; font-size:13px; font-weight:600;">
+              —
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="fetchServerName()" style="flex-shrink:0;">Refresh</button>
+          </div>
+        </div>
+
         <div>
           <label class="field-label">Jellyfin Server URL
-            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— the server you want to sync from</span>
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— the server to sync from</span>
           </label>
           <input id="cfg-server_url" type="text" placeholder="https://jellyfin.example.com">
         </div>
         <div>
           <label class="field-label">Stream Domain
-            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— usually the same as Server URL above</span>
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— usually the same as Server URL</span>
           </label>
           <input id="cfg-sync_domain" type="text" placeholder="https://jellyfin.example.com">
         </div>
         <div>
           <label class="field-label">API Key
-            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">
-              — leave blank to keep existing
-            </span>
+            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— leave blank to keep existing</span>
           </label>
           <input id="cfg-api_key" type="password" placeholder="••••••••••••••••">
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>
-            <label class="field-label">Streaming Username
-            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— Jellyfin account used for playback</span>
-          </label>
+            <label class="field-label">Streaming Username</label>
             <input id="cfg-nx_user" type="text">
           </div>
           <div>
             <label class="field-label">Streaming Password
-            <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— leave blank to keep existing</span>
-          </label>
+              <span style="font-weight:400; color:#475569; text-transform:none; letter-spacing:0;">— leave blank to keep existing</span>
+            </label>
             <input id="cfg-nx_pass" type="password" placeholder="••••••••">
           </div>
         </div>
-        <button class="btn btn-primary" style="width:100%;" onclick="saveConfig()">
-          Save Config
-        </button>
+        <button class="btn btn-primary" style="width:100%;" onclick="saveConfig()">Save Config</button>
         <div id="cfg-saved" style="display:none; text-align:center; font-size:12px; color:#4ade80; font-weight:600;">
           ✓ Config saved
         </div>
       </div>
     </div>
+
+    <!-- User slots -->
+    <div class="card">
+      <div class="card-title">User Slots</div>
+      <div style="font-size:12px; color:#64748b; margin-bottom:12px; line-height:1.5;">
+        Each enabled slot gets its own output folder and independent library selection.
+        <strong style="color:#94a3b8;">Shared</strong> is always on and cannot be renamed.
+      </div>
+      <div id="user-slots-config" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="saveUsers()">
+        Save User Slots
+      </button>
+      <div id="users-saved" style="display:none; text-align:center; font-size:12px; color:#4ade80; font-weight:600; margin-top:8px;">
+        ✓ User slots saved
+      </div>
+    </div>
+
   </div>
 
 </div><!-- end container -->
 
 <script>
-// ── State ────────────────────────────────────────────────────────
-let allItems   = [];
-let selectedIds = new Set();
+// ── State ──────────────────────────────────────────────────────────
+let allItems    = [];
+let userSelections = {};   // { user_id: Set<id> }
+let activeUserId = 'shared';
+let enabledUsers = [];     // [{id, label, enabled}, ...]
 
-// ── Tab switching ─────────────────────────────────────────────────
+// ── Tab switching ──────────────────────────────────────────────────
 function switchTab(name) {
   const names = ['sync','schedules','log','config'];
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', names[i] === name);
-  });
+  document.querySelectorAll('.tab').forEach((t,i) =>
+    t.classList.toggle('active', names[i] === name));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   if (name === 'log')       loadLog();
   if (name === 'schedules') loadSchedules();
-  if (name === 'config')    loadConfig();
+  if (name === 'config')    loadConfigTab();
 }
 
-// ── Browse / Library ──────────────────────────────────────────────
+// ── User slots ─────────────────────────────────────────────────────
+async function loadUsers() {
+  const users = await (await fetch('/api/users')).json();
+  enabledUsers = users.filter(u => u.enabled);
+
+  // Init selection state for any new slots
+  users.forEach(u => {
+    if (!userSelections[u.id]) {
+      userSelections[u.id] = new Set(u.last_selection || []);
+    }
+  });
+
+  renderUserTabs();
+  populateUserDropdown();
+}
+
+function renderUserTabs() {
+  const el = document.getElementById('user-tabs');
+  if (!enabledUsers.length) {
+    el.innerHTML = '<span style="font-size:12px; color:#475569;">No enabled user slots.</span>';
+    return;
+  }
+  el.innerHTML = enabledUsers.map(u => `
+    <div class="user-tab ${u.id === activeUserId ? 'active' : ''}"
+         onclick="switchUser('${u.id}')">
+      ${u.label}
+    </div>`).join('');
+}
+
+function switchUser(uid) {
+  activeUserId = uid;
+  const user = enabledUsers.find(u => u.id === uid);
+  document.getElementById('user-panel-title').textContent =
+    user ? `Library — ${user.label}` : 'Library';
+  renderUserTabs();
+  // Reset list to show current user's saved selection or prompt to load
+  if (allItems.length) {
+    renderList();
+  } else {
+    document.getElementById('library-list').innerHTML =
+      '<div style="padding:20px; text-align:center; color:#475569; font-size:13px;">Click "Load Library" to fetch media.</div>';
+  }
+  updateSummary();
+}
+
+function populateUserDropdown() {
+  const sel = document.getElementById('s-user');
+  sel.innerHTML = enabledUsers.map(u =>
+    `<option value="${u.id}">${u.label}</option>`).join('');
+}
+
+// ── Browse / Library ───────────────────────────────────────────────
 async function browseLibrary() {
   setPill('Fetching…', 'blue');
   try {
-    // server_url and api_key are read server-side from saved config
     const res  = await post('/api/browse', {});
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    allItems    = data.items;
-    selectedIds = new Set(allItems.map(i => i.id));
+    allItems = data.items;
+
+    // If user has no saved selection yet, default to all
+    if (!userSelections[activeUserId] || userSelections[activeUserId].size === 0) {
+      userSelections[activeUserId] = new Set(allItems.map(i => i.id));
+    }
+
     renderList();
     setPill(`${allItems.length} items`, 'green');
   } catch(e) {
@@ -503,8 +571,9 @@ async function browseLibrary() {
 }
 
 function renderList() {
-  const text     = v('filter-text').toLowerCase();
-  const type     = v('filter-type');
+  const sel      = userSelections[activeUserId] || new Set();
+  const text     = document.getElementById('filter-text').value.toLowerCase();
+  const type     = document.getElementById('filter-type').value;
   const filtered = allItems.filter(i =>
     (type === 'all' || i.type === type) &&
     i.name.toLowerCase().includes(text)
@@ -516,8 +585,8 @@ function renderList() {
   }
   el.innerHTML = filtered.map(i => `
     <div class="item-row" onclick="toggle('${i.id}')">
-      <div class="checkmark ${selectedIds.has(i.id) ? 'on' : ''}">
-        ${selectedIds.has(i.id)
+      <div class="checkmark ${sel.has(i.id) ? 'on' : ''}">
+        ${sel.has(i.id)
           ? '<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 3.5,6.5 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
           : ''}
       </div>
@@ -530,32 +599,42 @@ function renderList() {
   updateSummary();
 }
 
-function toggle(id)       { selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id); renderList(); }
-function selectAll()      { allItems.forEach(i => selectedIds.add(i.id));  renderList(); }
-function selectNone()     { selectedIds.clear();                            renderList(); }
-function selectType(t)    { allItems.filter(i => i.type === t).forEach(i => selectedIds.add(i.id)); renderList(); }
-function updateSummary()  {
+function toggle(id) {
+  const sel = userSelections[activeUserId] || new Set();
+  sel.has(id) ? sel.delete(id) : sel.add(id);
+  userSelections[activeUserId] = sel;
+  renderList();
+}
+function selectAll()   { userSelections[activeUserId] = new Set(allItems.map(i => i.id)); renderList(); }
+function selectNone()  { userSelections[activeUserId] = new Set(); renderList(); }
+function selectType(t) {
+  const sel = userSelections[activeUserId] || new Set();
+  allItems.filter(i => i.type === t).forEach(i => sel.add(i.id));
+  userSelections[activeUserId] = sel;
+  renderList();
+}
+function updateSummary() {
+  const sel = userSelections[activeUserId] || new Set();
   document.getElementById('sel-summary').textContent =
-    selectedIds.size ? `${selectedIds.size} of ${allItems.length} selected` : '';
+    sel.size ? `${sel.size} of ${allItems.length} selected` : '';
 }
 
+// ── Sync ───────────────────────────────────────────────────────────
 async function runManualSync() {
-  if (!selectedIds.size) { showAlert('No items selected.', 'error'); return; }
+  const sel = userSelections[activeUserId] || new Set();
+  if (!sel.size) { showAlert('No items selected for this user.', 'error'); return; }
+  const user = enabledUsers.find(u => u.id === activeUserId);
   setPill('Syncing…', 'blue');
-  showAlert(`Syncing ${selectedIds.size} items — please wait…`, 'info');
+  showAlert(`Syncing ${sel.size} items for ${user ? user.label : activeUserId}…`, 'info');
   try {
     const res  = await post('/api/sync', {
-      selected_ids: [...selectedIds],
-      known_ids:    allItems.map(i => i.id)  // snapshot full library at browse time
+      user_id:      activeUserId,
+      selected_ids: [...sel],
+      known_ids:    allItems.map(i => i.id)
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    const parts = [];
-    if (data.movies)  parts.push(`${data.movies} movie${data.movies !== 1 ? 's' : ''} updated`);
-    if (data.shows)   parts.push(`${data.shows} show${data.shows !== 1 ? 's' : ''} updated`);
-    if (data.removed) parts.push(`${data.removed} item${data.removed !== 1 ? 's' : ''} removed`);
-    if (!parts.length) parts.push('Everything already up to date');
-    showAlert('✓ ' + parts.join(' · '), 'success');
+    showSyncResult([data]);
     setPill('Done', 'green');
   } catch(e) {
     showAlert('Sync failed: ' + e.message, 'error');
@@ -563,21 +642,49 @@ async function runManualSync() {
   }
 }
 
-// ── Day picker ────────────────────────────────────────────────────
-document.querySelectorAll('.day-btn').forEach(b => {
-  b.addEventListener('click', () => b.classList.toggle('on'));
-});
+async function runSyncAll() {
+  setPill('Syncing…', 'blue');
+  showAlert('Syncing all enabled users — please wait…', 'info');
+  try {
+    const res  = await post('/api/sync-all', {});
+    const data = await res.json();
+    showSyncResult(data);
+    setPill('Done', 'green');
+  } catch(e) {
+    showAlert('Sync All failed: ' + e.message, 'error');
+    setPill('Error', 'red');
+  }
+}
 
-// ── Schedules ─────────────────────────────────────────────────────
+function showSyncResult(results) {
+  const parts = [];
+  let anyError = false;
+  results.forEach(r => {
+    if (r.error) { parts.push(`${r.user}: Error — ${r.error}`); anyError = true; return; }
+    const bits = [];
+    if (r.movies)  bits.push(`${r.movies}M`);
+    if (r.shows)   bits.push(`${r.shows}S`);
+    if (r.removed) bits.push(`${r.removed} removed`);
+    parts.push(`${r.user}: ${bits.length ? bits.join(' · ') : 'up to date'}`);
+  });
+  showAlert((anyError ? '⚠ ' : '✓ ') + parts.join('  |  '), anyError ? 'error' : 'success');
+}
+
+// ── Day picker ─────────────────────────────────────────────────────
+document.querySelectorAll('.day-btn').forEach(b =>
+  b.addEventListener('click', () => b.classList.toggle('on')));
+
+// ── Schedules ──────────────────────────────────────────────────────
 async function saveSchedule() {
   const days = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
   if (!days.length) { alert('Select at least one day.'); return; }
   await post('/api/schedules', {
-    label:        v('s-label'),
+    label:        document.getElementById('s-label').value,
+    user_id:      document.getElementById('s-user').value,
     days,
-    hour:         parseInt(v('s-hour')),
-    minute:       parseInt(v('s-minute')),
-    scope:        v('s-scope'),
+    hour:         parseInt(document.getElementById('s-hour').value),
+    minute:       parseInt(document.getElementById('s-minute').value),
+    scope:        document.getElementById('s-scope').value,
     auto_add_new: document.getElementById('s-auto-add').checked,
     enabled:      true
   });
@@ -597,20 +704,19 @@ async function loadSchedules() {
       <div style="flex:1;">
         <div class="sched-name">${s.label}</div>
         <div class="sched-meta">
+          <span class="badge badge-purple" style="font-size:10px; padding:1px 7px; margin-right:4px;">
+            ${enabledUsers.find(u => u.id === s.user_id)?.label || s.user_id}
+          </span>
           ${s.days.map(d => dn[d]||d).join(', ')}
           &nbsp;·&nbsp;
           ${String(s.hour).padStart(2,'0')}:${String(s.minute).padStart(2,'0')} UTC
           &nbsp;·&nbsp;
-          ${s.scope === 'full' ? 'Full library' : 'Last selection'}
-          ${s.auto_add_new
-            ? '&nbsp;·&nbsp;<span style="color:#fbbf24;">⚡ Auto-add new</span>'
-            : ''}
+          ${s.scope === 'full' ? 'Full library' : "User's selection"}
+          ${s.auto_add_new ? '&nbsp;·&nbsp;<span style="color:#fbbf24;">⚡ Auto-add</span>' : ''}
         </div>
       </div>
       <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-        <span class="badge ${s.enabled ? 'badge-green' : 'badge-gray'}">
-          ${s.enabled ? 'On' : 'Off'}
-        </span>
+        <span class="badge ${s.enabled ? 'badge-green' : 'badge-gray'}">${s.enabled ? 'On' : 'Off'}</span>
         <button class="btn btn-ghost btn-sm" onclick="toggleSchedule('${s.id}', ${!s.enabled})">
           ${s.enabled ? 'Pause' : 'Enable'}
         </button>
@@ -632,7 +738,7 @@ async function deleteSchedule(id) {
   loadSchedules();
 }
 
-// ── Log ───────────────────────────────────────────────────────────
+// ── Log ────────────────────────────────────────────────────────────
 async function loadLog() {
   const log = await (await fetch('/api/log')).json();
   const el  = document.getElementById('log-table');
@@ -644,41 +750,116 @@ async function loadLog() {
     <div class="log-row">
       <span style="color:#cbd5e1;">${e.ts}</span>
       <span style="color:#94a3b8;">${e.trigger}</span>
+      <span><span class="badge badge-purple" style="font-size:10px; padding:1px 7px;">${e.user || '—'}</span></span>
       <span style="color:#94a3b8;">${e.error ? '—' : `${e.movies}M · ${e.shows}S`}</span>
-      <span style="color:${(e.removed||0) > 0 ? '#f87171' : '#64748b'};">${e.removed ?? 0}</span>
-      <span style="color:${(e.added||0) > 0 ? '#4ade80' : '#64748b'};">${e.added ?? 0}</span>
-      <span>
-        <span class="badge ${e.error ? 'badge-red' : 'badge-green'}" style="font-size:10px;">
-          ${e.error ? 'Error' : 'OK'}
-        </span>
-      </span>
+      <span style="color:${(e.removed||0)>0?'#f87171':'#64748b'};">${e.removed??0}</span>
+      <span style="color:${(e.added||0)>0?'#4ade80':'#64748b'};">${e.added??0}</span>
+      <span><span class="badge ${e.error?'badge-red':'badge-green'}" style="font-size:10px;">${e.error?'Error':'OK'}</span></span>
     </div>`).join('');
 }
 
-// ── Config ────────────────────────────────────────────────────────
-async function loadConfig() {
+// ── Config tab ─────────────────────────────────────────────────────
+async function loadConfigTab() {
   const cfg = await (await fetch('/api/config')).json();
   document.getElementById('cfg-server_url').value  = cfg.server_url  || '';
   document.getElementById('cfg-sync_domain').value = cfg.sync_domain || '';
   document.getElementById('cfg-nx_user').value     = cfg.nx_user     || '';
+  document.getElementById('server-name-display').textContent =
+    cfg.server_name || '— not yet fetched';
+
+  renderUserSlotsConfig(cfg.users || []);
 }
 
 async function saveConfig() {
-  await post('/api/config', {
-    server_url:  v('cfg-server_url'),
-    sync_domain: v('cfg-sync_domain'),
-    nx_user:     v('cfg-nx_user'),
-    api_key:     v('cfg-api_key'),
-    nx_pass:     v('cfg-nx_pass')
+  const res  = await post('/api/config', {
+    server_url:  document.getElementById('cfg-server_url').value,
+    sync_domain: document.getElementById('cfg-sync_domain').value,
+    nx_user:     document.getElementById('cfg-nx_user').value,
+    api_key:     document.getElementById('cfg-api_key').value,
+    nx_pass:     document.getElementById('cfg-nx_pass').value
   });
+  const data = await res.json();
+  if (data.server_name) {
+    document.getElementById('server-name-display').textContent = data.server_name;
+  }
   const el = document.getElementById('cfg-saved');
   el.style.display = 'block';
   setTimeout(() => el.style.display = 'none', 2500);
 }
 
-// ── Utilities ─────────────────────────────────────────────────────
-function v(id) { return document.getElementById(id).value; }
+async function fetchServerName() {
+  const btn = event.target;
+  btn.textContent = '…';
+  try {
+    const res  = await post('/api/server-name', {});
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    document.getElementById('server-name-display').textContent = data.server_name;
+  } catch(e) {
+    document.getElementById('server-name-display').textContent = 'Error: ' + e.message;
+  }
+  btn.textContent = 'Refresh';
+}
 
+// ── User slots config ──────────────────────────────────────────────
+function renderUserSlotsConfig(users) {
+  const el = document.getElementById('user-slots-config');
+  el.innerHTML = users.map(u => `
+    <div class="user-slot-card ${u.id === 'shared' ? 'shared-slot' : ''}">
+      <div style="flex:1; display:flex; align-items:center; gap:10px;">
+        ${u.id === 'shared'
+          ? `<span style="font-size:13px; font-weight:700; color:#38bdf8; min-width:80px;">Shared</span>
+             <span style="font-size:11px; color:#475569;">Always enabled · cannot be renamed</span>`
+          : `<input type="text" value="${u.label}"
+               id="ulabel-${u.id}"
+               style="width:140px; font-size:13px;"
+               placeholder="User label">`
+        }
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        ${u.id === 'shared'
+          ? `<span class="badge badge-green">Always On</span>`
+          : `<label class="toggle" title="${u.enabled ? 'Enabled' : 'Disabled'}">
+               <input type="checkbox" id="uenabled-${u.id}" ${u.enabled ? 'checked' : ''}>
+               <div class="toggle-track"></div>
+             </label>
+             <span style="font-size:12px; color:#64748b; min-width:52px;"
+                   id="ustatus-${u.id}">${u.enabled ? 'Enabled' : 'Disabled'}</span>`
+        }
+      </div>
+    </div>`).join('');
+
+  // Live status label update on toggle
+  users.filter(u => u.id !== 'shared').forEach(u => {
+    const chk = document.getElementById(`uenabled-${u.id}`);
+    if (chk) chk.addEventListener('change', () => {
+      document.getElementById(`ustatus-${u.id}`).textContent =
+        chk.checked ? 'Enabled' : 'Disabled';
+    });
+  });
+}
+
+async function saveUsers() {
+  const cfg   = await (await fetch('/api/config')).json();
+  const users = cfg.users || [];
+  const payload = users.map(u => {
+    if (u.id === 'shared') return { id: u.id, label: 'Shared', enabled: true };
+    const labelEl   = document.getElementById(`ulabel-${u.id}`);
+    const enabledEl = document.getElementById(`uenabled-${u.id}`);
+    return {
+      id:      u.id,
+      label:   labelEl   ? labelEl.value.trim() || u.label : u.label,
+      enabled: enabledEl ? enabledEl.checked                : u.enabled
+    };
+  });
+  await post('/api/users', payload);
+  await loadUsers();           // refresh sync tab tabs + schedule dropdown
+  const el = document.getElementById('users-saved');
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 2500);
+}
+
+// ── Utilities ──────────────────────────────────────────────────────
 function post(url, body) {
   return fetch(url, {
     method: 'POST',
@@ -699,6 +880,9 @@ function setPill(msg, color) {
   el.className = `badge badge-${color === 'blue' ? 'blue' : color === 'green' ? 'green' : color === 'red' ? 'red' : 'gray'}`;
   el.textContent = msg;
 }
+
+// ── Init ───────────────────────────────────────────────────────────
+loadUsers();
 </script>
 </body>
 </html>
